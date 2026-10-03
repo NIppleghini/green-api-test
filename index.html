@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GREEN-API Test</title>
+    <style>
+        /* Стилизация страницы согласно макету */
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background-color: #f9f9f9;
+        }
+        .container { 
+            display: flex; 
+            gap: 20px; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+        }
+        .left-panel { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            width: 50%; 
+        }
+        .right-panel { 
+            width: 50%; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        .method-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+        }
+        input, button { 
+            padding: 8px 12px; 
+            font-size: 14px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px;
+        }
+        button { 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #0056b3; }
+        textarea { 
+            width: 100%; 
+            height: 100%; 
+            min-height: 400px; 
+            resize: none; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            background-color: #fff;
+        }
+        label { font-weight: bold; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Левая колонка с параметрами и кнопками -->
+        <div class="left-panel">
+            <div class="method-group">
+                <input type="text" id="idInstance" placeholder="idInstance">
+                <input type="text" id="apiTokenInstance" placeholder="ApiTokenInstance">
+            </div>
+
+            <div class="method-group">
+                <button onclick="callGetApi('getSettings')">getSettings</button>
+                <button onclick="callGetApi('getStateInstance')">getStateInstance</button>
+            </div>
+
+            <div class="method-group">
+                <input type="text" id="phoneMessage" placeholder="77771234567">
+                <input type="text" id="messageText" placeholder="Hello World!">
+                <button onclick="sendMessage()">sendMessage</button>
+            </div>
+
+            <div class="method-group">
+                <input type="text" id="phoneFile" placeholder="77771234567">
+                <input type="text" id="fileUrl" placeholder="https://my.site.com/img/horse.png">
+                <button onclick="sendFileByUrl()">sendFileByUrl</button>
+            </div>
+        </div>
+
+        <!-- Правая колонка с ответом -->
+        <div class="right-panel">
+            <label for="responseArea">Ответ:</label>
+            <textarea id="responseArea" readonly></textarea>
+        </div>
+    </div>
+
+    <script>
+        // Функция формирования URL для API
+        function getApiUrl(method) {
+            const idInstance = document.getElementById('idInstance').value.trim();
+            const apiTokenInstance = document.getElementById('apiTokenInstance').value.trim();
+            return `https://api.green-api.com/waInstance${idInstance}/${method}/${apiTokenInstance}`;
+        }
+
+        // Базовая функция для отправки запросов
+        async function makeRequest(url, options) {
+            const responseArea = document.getElementById('responseArea');
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                responseArea.value = JSON.stringify(data, null, 4);
+            } catch (error) {
+                responseArea.value = "Ошибка выполнения запроса:\n" + error;
+            }
+        }
+
+        // Обработчик GET-методов (getSettings, getStateInstance)
+        function callGetApi(method) {
+            makeRequest(getApiUrl(method), { method: 'GET' });
+        }
+
+        // Обработчик sendMessage
+        function sendMessage() {
+            const phone = document.getElementById('phoneMessage').value.trim();
+            const message = document.getElementById('messageText').value.trim();
+            
+            const payload = {
+                chatId: `${phone}@c.us`, // Форматирование номера для WhatsApp
+                message: message
+            };
+
+            makeRequest(getApiUrl('sendMessage'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        // Обработчик sendFileByUrl
+        function sendFileByUrl() {
+            const phone = document.getElementById('phoneFile').value.trim();
+            const fileUrl = document.getElementById('fileUrl').value.trim();
+            
+            // Динамическое извлечение имени файла из URL
+            let fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+            if (!fileName) fileName = 'file.png';
+
+            const payload = {
+                chatId: `${phone}@c.us`,
+                urlFile: fileUrl,
+                fileName: fileName
+            };
+
+            makeRequest(getApiUrl('sendFileByUrl'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+    </script>
+</body>
+</html>
